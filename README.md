@@ -56,7 +56,7 @@ addEventListener('fetch', e => e.respondWith(new Response(++n)))
 
 而对于暴力破解攻击来说，由于攻击者需要发起大量请求，因此计算代价的累积会让攻击变得非常昂贵，从而在经济上阻止暴力破解攻击。
 
-此处的计算代价可以通过**工作量证明（Proof of Work, PoW）**来实现。这里的灵感也来自于(Anubis)[https://anubis.techaro.lol/]，这是一个能够通过PoW来实现合法用户验证的开源项目。
+此处的计算代价可以通过**工作量证明**（Proof of Work, PoW）来实现。这里的灵感也来自于[Anubis](https://anubis.techaro.lol/)，这是一个能够通过PoW来实现合法用户验证的开源项目。
 
 ## 真的无状态？
 
