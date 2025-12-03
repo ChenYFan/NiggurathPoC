@@ -84,8 +84,8 @@
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-Challenge-Token': challengeAnswer.ChallengeAnswerToken,
-                'X-Challenge-Answer': challengeAnswer.ChallengeAnswer
+                'n-Challenge-Token': challengeAnswer.ChallengeAnswerToken,
+                'n-Challenge-Answer': challengeAnswer.ChallengeAnswer
             },
             body: JSON.stringify({
                 username: document.getElementById('mock-login-username').value,

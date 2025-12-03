@@ -50,8 +50,8 @@ function NiggurathChallengeClass() {
 		}
 	}
 	this.verify = (reqHeaders) => {
-		const ClientChanllenge = reqHeaders.get("X-Challenge-Token") || null;
-		const ClientAnswer = reqHeaders.get("X-Challenge-Answer") || null;
+		const ClientChanllenge = reqHeaders.get("n-Challenge-Token") || null;
+		const ClientAnswer = reqHeaders.get("n-Challenge-Answer") || null;
 		if (!ClientChanllenge
 			|| !ClientAnswer
 			|| ClientChanllenge !== this.LocalChallenge.UniqueChallenge) return false;
@@ -65,7 +65,6 @@ function NiggurathChallengeClass() {
 export default {
 	async fetch(request, env, ctx) {
 		const url = new URL(request.url);
-		const salt = env.SALT;
 		if (url.pathname.startsWith("/api/")) {
 			const action = url.pathname.replace("/api/", "");
 			switch (action) {

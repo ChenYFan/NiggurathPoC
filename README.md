@@ -87,6 +87,8 @@ Anubis很好，但在架构上不适应纯无状态的服务。（尤其地对�
 
 不过如果你想玩玩看，点击下方按钮一键Deploy。
 
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/ChenYFan/NiggurathPoC)
+
 ## 未来计划？
 
 - [x] PoW认证服务概念验证
