@@ -1,0 +1,99 @@
+<h1>Niggurath</h1>
+<h2>基于 CloudFlare Worker 伪无状态的PoW认证服务（概念验证）</h2>
+
+<hr>
+
+<!--Step1 GetAliveChallengeCheckToken-->
+<h3>步骤1：初始化 NiggurathPoW （KeepAlive模式）</h3>
+<button id="get-challenge-token-btn">初始化（KeepAlive模式）检查令牌</button>
+<pre id="challenge-token-output"></pre>
+<script>
+    document.getElementById('get-challenge-token-btn').addEventListener('click', async () => {
+        const response = await fetch('/api/GetChallenge');
+        const data = await response.json();
+        document.getElementById('challenge-token-output').textContent = JSON.stringify(data, null, 4);
+    });
+</script>
+
+<hr>
+<!--Step2 MockLogin-->
+<h3>步骤2：模拟登录（提交挑战答案）</h3>
+<label for="mock-login-username">用户名:</label>
+<input type="text" id="mock-login-username" value="CyanFalse">
+<br>
+<label for="mock-login-password">密码:</label>
+<input type="password" id="mock-login-password" value="1145141919810">
+<br>
+<pre id="mock-login-notice">模拟账号：CyanFalse 密码：1145141919810。每个Challenge只能使用一次。</pre>
+<button id="mock-login-btn">模拟登录</button>
+<pre id="mock-login-output"></pre>
+<pre id="mock-login-extra-output"></pre>
+<script>
+    const asleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+    document.getElementById('mock-login-btn').addEventListener('click', async () => {
+        document.getElementById('mock-login-btn').disabled = true;
+        const challengeInfo = JSON.parse(document.getElementById('challenge-token-output').textContent || "{}");
+        const challengeQuestion = challengeInfo.UniqueQuestion;
+        const challengeToken = challengeInfo.UniqueChallenge;
+        const challengeLength = challengeInfo.ChallengeLength;
+        if (!challengeQuestion || !challengeToken || !challengeLength) {
+            document.getElementById('mock-login-output').textContent = "请先完成步骤1，获取挑战令牌";
+            document.getElementById('mock-login-btn').disabled = false;
+            return;
+        }
+        const ChallengeProof = (challengeQuestion, challengeToken, challengeLength) => {
+            const startTime = new Date().getTime();
+            const SHA256 = async (message) => {
+                const msgBuffer = new TextEncoder().encode(message);
+                const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+                const hashArray = Array.from(new Uint8Array(hashBuffer));
+                const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+                return hashHex;
+            };
+            const maxNumber = Math.pow(10, challengeLength) - 1;
+            return new Promise(async (resolve, reject) => {
+                for (let i = 0; i <= maxNumber; i++) {
+                    const attempt = i.toString().padStart(challengeLength, '0');
+                    const attemptHash = await SHA256(challengeQuestion + ":" + attempt);
+                    // if (i % Math.floor(maxNumber / 100) === 0) {
+                    //     document.getElementById('pow-progress-output').textContent = `Progress: ${((i / maxNumber) * 100).toFixed(2)}%`;
+                    // }
+                    // await asleep(1); // Yield to keep UI responsive
+                    if (attemptHash === challengeToken) {
+                        console.log(`Challenge solved in ${new Date().getTime() - startTime} ms, answer: ${attempt}`);
+                        resolve({
+                            ChallengeAnswer: attempt,
+                            ChallengeAnswerToken: attemptHash
+                        });
+                        document.getElementById('mock-login-btn').disabled = false;
+                        document.getElementById('mock-login-extra-output').textContent = "Challenge solved in " + (new Date().getTime() - startTime) + " ms, answer: " + attempt;
+                        return;
+                    }
+                }
+                document.getElementById('mock-login-btn').disabled = false;
+                document.getElementById('mock-login-extra-output').textContent = "No valid answer found";
+                reject("No valid answer found");
+            });
+        };
+        const challengeAnswer = await ChallengeProof(challengeQuestion, challengeToken, challengeLength);
+
+
+
+        const RequestTime = new Date().getTime();
+        const response = await fetch('/api/MockLogin', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Challenge-Token': challengeAnswer.ChallengeAnswerToken,
+                'X-Challenge-Answer': challengeAnswer.ChallengeAnswer
+            },
+            body: JSON.stringify({
+                username: document.getElementById('mock-login-username').value,
+                password: document.getElementById('mock-login-password').value
+            })
+        });
+        const data = await response.json();
+        document.getElementById('mock-login-output').textContent = JSON.stringify(data, null, 4);
+        document.getElementById('mock-login-extra-output').textContent += `\nLogin ${data.success ? 'successful' : 'failed'}.Reason: ${data.message}. Request time: ${new Date().getTime() - RequestTime} ms.`;
+    });
+</script>
