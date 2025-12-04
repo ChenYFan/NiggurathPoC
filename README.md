@@ -101,8 +101,9 @@ Anubis很好，但在架构上不适应纯无状态的服务。（尤其地对�
 
 不过，大部分测试是有效的：
 
+- [x] **Internet Explorer 11** (需要Polyfill，~~**IE也来啦**~~)
 - [x] Tor
-- [x] Tencent Cloud CDN
+- [x] Tencent Cloud CDN (EdgeOne)
 - [x] Another CloudFlare Worker
 - [x] PHP Reverse Proxy
 - [x] Nginx Reverse Proxy 
@@ -120,9 +121,9 @@ Anubis很好，但在架构上不适应纯无状态的服务。（尤其地对�
 |ARM Snapdragon 8+ Gen 1|Webview Chrome 144|5|2820ms|35.5it/ms|使用WebWorker|
 |ARM Neoverse N1|Webview Chrome 142|5|4033ms|24.8it/ms|使用WebWorker|
 
-这在现代设备上完全是一个轻量级任务，但需要注意，较旧的浏览器内核和不支持WebWorker的环境可能会导致性能显著下降。并且，当不使用WebWorker时，由于主线程阻塞，用户体验可能会受到影响（表现为页面冻结）。如果使用settimeout等方法将计算任务踢出主线程，会导致计算效率急剧下降到2-3it/ms。
+这在现代设备上完全是一个轻量级任务。但需要注意，较旧的浏览器内核和不支持WebWorker的环境可能会导致性能显著下降。并且，当不使用WebWorker时，由于主线程阻塞，用户体验可能会受到影响（表现为页面冻结）。如果使用settimeout等方法将计算任务踢出主线程，将会导致计算效率急剧下降到2-3it/ms。
 
-尽管Niggurath提供了onProgress回调来反馈计算进度，并且Niggurath推荐在用户界面上展示计算进度，但CyanFalse仍不建议将计算难度（即长度）设置为5以上，除非你通过其他方式认为本请求极具风险，迫使用户进行更高强度的计算。
+尽管Niggurath提供了onProgress回调来反馈计算进度，并且Niggurath推荐在用户界面上展示计算进度，但CyanFalse仍不建议将计算难度（即长度）设置为5以上，除非你通过其他方式认为本请求极具风险，需要迫使用户进行更高强度的计算。
 
 
 ## 未来计划？
@@ -136,6 +137,8 @@ Anubis很好，但在架构上不适应纯无状态的服务。（尤其地对�
 ## License
 
 GPL-3.0 License
+
+## Notes
 
 [^1] 高情商：避免Worker冷启动耗时 中情商：巧用TCP控制LifeCycle 低情商：懒蛋。 此外，这和ServiceWorker的生命周期类似，在网页打开期间，ServiceWorker实例的内存状态也会被保留着。直到30s没有请求，ServiceWorker才会被终止。
 
