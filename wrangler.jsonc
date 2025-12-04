@@ -1,6 +1,6 @@
 {
 	"name": "niggurath",
-	"main": "Niggurath.worker.js",
+	"main": "NiggurathPoc.cfworker.js",
 	"observability": {
 		"enabled": true
 	},

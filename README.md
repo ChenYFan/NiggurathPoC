@@ -89,12 +89,49 @@ Anubis很好，但在架构上不适应纯无状态的服务。（尤其地对�
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/ChenYFan/NiggurathPoC)
 
+## 兼容性？
+
+因为用TCP来维持HTTP的方式本身就是Feature，所以在一些非常奇怪/极差的网络环境下，Niggurath （KeepAlive）可能无法正常工作。
+
+此外，在通过其他CDN/中间盒/中间件Middleware的情况下，由于中继节点采取的策略不同，并不一定遵守HTTP持久连接的规范，因此Niggurath也可能无法正常工作。
+
+此时Niggurath允许使用WebSocket作为Fallback连接方式（待实现）。
+
+> 但是，我们通常建议将待验证的接口（例如登录、注册接口）直接进行Niggurath验证。使用WebSocket可能会使实际逻辑编写变得复杂。
+
+不过，大部分测试是有效的：
+
+- [x] Tor
+- [x] Tencent Cloud CDN
+- [x] Another CloudFlare Worker
+- [x] PHP Reverse Proxy
+- [x] Nginx Reverse Proxy 
+
+## BenchMark？
+
+以下是CyanFalse实际测试结果：
+
+|CPU|环境|难度（即计算长度）|最差运气平均耗时|速度|备注|
+|---|---|---|---|---|---|
+|x86 Intel i5-12600|Chrome 142|5|1080ms|92it/ms|使用WebWorker|
+|x86 Intel i5-12600|Chrome 142|5|1266ms|78.9it/ms|不使用WebWorker|
+|x86 Intel i5-12600|Tor 15,FireFox 140|5|2455ms|40.8it/ms|使用WebWorker|
+|ARM Snapdragon 8+ Gen 1|**Webview Chrome 103**|5|**10315ms**|**9.7it/ms**|使用WebWorker|
+|ARM Snapdragon 8+ Gen 1|Webview Chrome 144|5|2820ms|35.5it/ms|使用WebWorker|
+|ARM Neoverse N1|Webview Chrome 142|5|4033ms|24.8it/ms|使用WebWorker|
+
+这在现代设备上完全是一个轻量级任务，但需要注意，较旧的浏览器内核和不支持WebWorker的环境可能会导致性能显著下降。并且，当不使用WebWorker时，由于主线程阻塞，用户体验可能会受到影响（表现为页面冻结）。如果使用settimeout等方法将计算任务踢出主线程，会导致计算效率急剧下降到2-3it/ms。
+
+尽管Niggurath提供了onProgress回调来反馈计算进度，并且Niggurath推荐在用户界面上展示计算进度，但CyanFalse仍不建议将计算难度（即长度）设置为5以上，除非你通过其他方式认为本请求极具风险，迫使用户进行更高强度的计算。
+
+
 ## 未来计划？
 
 - [x] PoW认证服务概念验证
-- [ ] 时间有效的Challenge令牌
+- [x] 时间有效的Challenge令牌
+- [x] 使用Web Worker加速Challenge计算
 - [ ] 使用WebSocket作为Fallback连接方式
-- [ ] 通过劫持fetch来允许Niggurath作为第三方中间件使用 
+- [ ] ~~通过劫持fetch来允许Niggurath作为第三方中间件使用~~ 无计划，提供基础API。
 
 ## License
 

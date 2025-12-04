@@ -28,54 +28,37 @@
 <button id="mock-login-btn">模拟登录</button>
 <pre id="mock-login-output"></pre>
 <pre id="mock-login-extra-output"></pre>
+<script src="/NiggurathFinder.js"></script>
 <script>
     const asleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
     document.getElementById('mock-login-btn').addEventListener('click', async () => {
         document.getElementById('mock-login-btn').disabled = true;
         const challengeInfo = JSON.parse(document.getElementById('challenge-token-output').textContent || "{}");
-        const challengeQuestion = challengeInfo.UniqueQuestion;
-        const challengeToken = challengeInfo.UniqueChallenge;
-        const challengeLength = challengeInfo.ChallengeLength;
+        const challengeQuestion = challengeInfo.Question;
+        const challengeToken = challengeInfo.Token;
+        const challengeLength = challengeInfo.Length;
         if (!challengeQuestion || !challengeToken || !challengeLength) {
+            console.log(challengeQuestion, challengeToken, challengeLength);
             document.getElementById('mock-login-output').textContent = "请先完成步骤1，获取挑战令牌";
             document.getElementById('mock-login-btn').disabled = false;
             return;
         }
-        const ChallengeProof = (challengeQuestion, challengeToken, challengeLength) => {
-            const startTime = new Date().getTime();
-            const SHA256 = async (message) => {
-                const msgBuffer = new TextEncoder().encode(message);
-                const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+        const ChallengeStartTime = new Date().getTime();
+        const niggurathFinder = new NiggurathFinder({
+            HashFunction: async (input) => {
+                const msgUint8 = new TextEncoder().encode(input);
+                const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
                 const hashArray = Array.from(new Uint8Array(hashBuffer));
                 const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
                 return hashHex;
-            };
-            const maxNumber = Math.pow(10, challengeLength) - 1;
-            return new Promise(async (resolve, reject) => {
-                for (let i = 0; i <= maxNumber; i++) {
-                    const attempt = i.toString().padStart(challengeLength, '0');
-                    const attemptHash = await SHA256(challengeQuestion + ":" + attempt);
-                    // if (i % Math.floor(maxNumber / 100) === 0) {
-                    //     document.getElementById('pow-progress-output').textContent = `Progress: ${((i / maxNumber) * 100).toFixed(2)}%`;
-                    // }
-                    // await asleep(1); // Yield to keep UI responsive
-                    if (attemptHash === challengeToken) {
-                        console.log(`Challenge solved in ${new Date().getTime() - startTime} ms, answer: ${attempt}`);
-                        resolve({
-                            ChallengeAnswer: attempt,
-                            ChallengeAnswerToken: attemptHash
-                        });
-                        document.getElementById('mock-login-btn').disabled = false;
-                        document.getElementById('mock-login-extra-output').textContent = "Challenge solved in " + (new Date().getTime() - startTime) + " ms, answer: " + attempt;
-                        return;
-                    }
-                }
-                document.getElementById('mock-login-btn').disabled = false;
-                document.getElementById('mock-login-extra-output').textContent = "No valid answer found";
-                reject("No valid answer found");
-            });
+            },
+            //ForceMainThread: true
+        });
+        niggurathFinder.onProgress = (data) => {
+            document.getElementById('mock-login-extra-output').textContent = `计算中... ${data.progress}% 完成，当前attempt: ${data.attempt} attemptHash: ${data.attemptHash}`;
         };
-        const challengeAnswer = await ChallengeProof(challengeQuestion, challengeToken, challengeLength);
+        const challengeAnswer = await niggurathFinder.solveChallenge(challengeQuestion, challengeToken, challengeLength);
+        document.getElementById('mock-login-extra-output').textContent += `\n挑战答案计算完成，答案为：${challengeAnswer}，耗时：${new Date().getTime() - ChallengeStartTime} ms。正在提交登录请求...`;
 
 
 
@@ -84,8 +67,7 @@
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'n-Challenge-Token': challengeAnswer.ChallengeAnswerToken,
-                'n-Challenge-Answer': challengeAnswer.ChallengeAnswer
+                'n-Challenge-Answer': challengeAnswer
             },
             body: JSON.stringify({
                 username: document.getElementById('mock-login-username').value,
@@ -95,5 +77,6 @@
         const data = await response.json();
         document.getElementById('mock-login-output').textContent = JSON.stringify(data, null, 4);
         document.getElementById('mock-login-extra-output').textContent += `\nLogin ${data.success ? 'successful' : 'failed'}.Reason: ${data.message}. Request time: ${new Date().getTime() - RequestTime} ms.`;
+        document.getElementById('mock-login-btn').disabled = false;
     });
 </script>
